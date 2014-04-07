@@ -1,13 +1,15 @@
-var express = require('express');
-var http = require('http');
-var path = require('path');
-var favicon = require('static-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-
-var routes = require('./routes');
-var users = require('./routes/user');
+var
+    express      = require('express'),
+    http         = require('http'),
+    path         = require('path'),
+    favicon      = require('static-favicon'),
+    logger       = require('morgan'),
+    cookieParser = require('cookie-parser'),
+    bodyParser   = require('body-parser'),
+    pg           = require('pg'),
+    routes       = require('./routes'),
+    users        = require('./routes/user')
+;
 
 var app = express();
 
@@ -24,7 +26,13 @@ app.use(require('less-middleware')({ src: path.join(__dirname, 'public') }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(app.router);
 
-app.get('/', routes.index);
+// app.get('/', routes.index);
+app.get('/', function (req, res) {
+    queryDB("SELECT * FROM USERS", function (result) {
+        console.log("Result: ", result);
+        res.render('index', {rows: result.rows} );
+    });
+});
 app.get('/users', users.list);
 
 /// catch 404 and forwarding to error handler
@@ -55,6 +63,49 @@ app.use(function(err, req, res, next) {
         error: {}
     });
 });
+
+function queryDB( query, cc ) {
+    var client = new pg.Client( "postgres://postgres:qfefasdF234%@localhost:5433/postgres" );
+    client.connect( function(err) {
+        if(err) {
+            return console.log("Could not connect", err);
+        }
+
+        client.query(query, function (err, result) {
+            if(err) {
+                return console.log("Could not query", err);
+            }
+            cc(result);
+
+            client.end();
+        });
+    });
+}
+
+
+
+
+app.get('/users', function (req, res) {
+    //get list of users : JSON
+    queryDB("SELECT * FROM USERS", function (result) {
+        console.log("Result: ", result);
+        res.send({rows: result.rows});
+    });
+});
+app.get('/users/:id', function (req, res) {
+    //Get specific user
+});
+app.post('/users/:id', function (req, res) {
+    //save specific user
+});
+app.put('/users/:id', function (req, res) {
+    //save specific user
+});
+
+app.get('/', function (req, res) {
+
+});
+
 
 
 module.exports = app;
